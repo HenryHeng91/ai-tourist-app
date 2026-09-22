@@ -100,9 +100,18 @@ class AuthService {
         '/auth/refresh',
         data: {'refreshToken': refresh},
       );
-      final newToken = response.data['token'] as String?;
+      // Backend returns { 'accessToken': ..., 'refreshToken': ... } — same
+      // field names as login/signup (see AuthSession.fromJson). Reading
+      // 'token' here was inconsistent with fromJson and broke after the
+      // backend aligned on accessToken/refreshToken.
+      final newToken = response.data['accessToken'] as String?;
       if (newToken != null) {
         await storage.write(SecureStorageKeys.accessToken, newToken);
+        // Persist a rotated refresh token if the backend returns one.
+        final newRefresh = response.data['refreshToken'] as String?;
+        if (newRefresh != null && newRefresh.isNotEmpty) {
+          await storage.write(SecureStorageKeys.refreshToken, newRefresh);
+        }
       }
       return newToken;
     } on DioException {

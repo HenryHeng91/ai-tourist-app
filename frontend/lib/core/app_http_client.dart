@@ -35,13 +35,25 @@ class AppHttpClient {
 /// Dio interceptor that attaches the JWT bearer token from
 /// [SecureStorageService] to every request, and performs a single
 /// refresh attempt on 401.
+///
+/// The interceptor holds a reference to the [Dio] instance it is
+/// attached to so the 401 retry reuses the same base URL, timeouts,
+/// and content-type config — instead of spinning up a bare `Dio()`
+/// that would lose all of that. A per-request guard
+/// (`RequestOptions.extra['authRetried']`) prevents infinite refresh
+/// loops when the retried request is itself a 401.
 class AuthInterceptor extends Interceptor {
   AuthInterceptor({
+    required this.dio,
     required this.storage,
     required this.onTokenRefreshed,
     required this.onAuthFailed,
   });
 
+  /// The Dio instance this interceptor is attached to. Used to retry
+  /// the original request after a successful token refresh so the retry
+  /// inherits base URL / timeouts / headers from the configured client.
+  final Dio dio;
   final SecureStorageService storage;
   final Future<String?> Function() onTokenRefreshed;
   final Future<void> Function() onAuthFailed;
@@ -63,7 +75,10 @@ class AuthInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode != 401) {
+    final is401 = err.response?.statusCode == 401;
+    // Guard against infinite refresh loops: only retry once per request.
+    final alreadyRetried = err.requestOptions.extra['authRetried'] == true;
+    if (!is401 || alreadyRetried) {
       handler.next(err);
       return;
     }
@@ -75,11 +90,13 @@ class AuthInterceptor extends Interceptor {
       return;
     }
 
-    // Retry the original request with the new token.
+    // Retry the original request with the new token via the SAME Dio
+    // instance (preserves baseUrl, timeouts, content-type). Mark the
+    // clone so a subsequent 401 doesn't trigger another refresh.
     final clone = err.requestOptions
-      ..headers['Authorization'] = 'Bearer $refreshed';
+      ..headers['Authorization'] = 'Bearer $refreshed'
+      ..extra = {...err.requestOptions.extra, 'authRetried': true};
     try {
-      final dio = Dio();
       final response = await dio.fetch(clone);
       handler.resolve(response);
     } on DioException catch (e) {
@@ -90,6 +107,6 @@ class AuthInterceptor extends Interceptor {
     }
   }
 
-  /// Attach this interceptor to a [Dio] instance.
-  void attach(Dio dio) => dio.interceptors.add(this);
+  /// Attach this interceptor to its configured [Dio] instance.
+  void attach() => dio.interceptors.add(this);
 }

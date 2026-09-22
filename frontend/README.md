@@ -36,15 +36,15 @@ frontend/
 ```bash
 cd frontend
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://localhost:3000
+flutter run --dart-define=API_BASE_URL=http://localhost:4000
 ```
 
 ## Configuration
 
 | Define | Default | Purpose |
 |--------|---------|---------|
-| `API_BASE_URL` | `http://localhost:3000` | Backend REST base |
-| `WS_BASE_URL` | `ws://localhost:3000` | WebSocket base |
+| `API_BASE_URL` | `http://localhost:4000` | Backend REST base (dev; prod MUST use `https://` — NFR-SEC-2) |
+| `WS_BASE_URL` | `ws://localhost:4000` | WebSocket base (dev; prod MUST use `wss://`) |
 | `AI_PROVIDER_BASE_URL` | `https://api.openai.com/v1` | User's AI provider (BYOK) |
 | `GOOGLE_OAUTH_CLIENT_ID` | (empty) | Google social login client ID |
 | `GOOGLE_OAUTH_REDIRECT_URI` | `com.aitourist.guide:/oauth2redirect` | OAuth redirect |

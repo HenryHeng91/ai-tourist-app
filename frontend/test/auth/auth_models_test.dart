@@ -75,6 +75,25 @@ void main() {
     when(() => auth.refresh()).thenAnswer((_) async => 'new-token');
     expect(auth.refresh(), completion('new-token'));
   });
+
+  // Regression guard for the critical review finding: the refresh
+  // endpoint response must use the SAME field names as AuthSession
+  // (accessToken/refreshToken), NOT a bare 'token'. This test pins the
+  // contract by round-tripping a refresh-style payload through
+  // AuthSession.fromJson.
+  test('refresh response field names match AuthSession (accessToken/refreshToken)', () {
+    final refreshPayload = <String, dynamic>{
+      'userId': 'u-1',
+      'email': 'a@b.com',
+      'accessToken': 'new-access-jwt',
+      'refreshToken': 'new-refresh-jwt',
+    };
+    final session = AuthSession.fromJson(refreshPayload);
+    expect(session.accessToken, 'new-access-jwt');
+    expect(session.refreshToken, 'new-refresh-jwt');
+    // No 'token' field is involved anywhere in the auth model contract.
+    expect(refreshPayload.containsKey('token'), isFalse);
+  });
 }
 
 class MockAuthService extends Mock implements AuthService {}

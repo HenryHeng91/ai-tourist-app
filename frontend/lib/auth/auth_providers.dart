@@ -130,12 +130,13 @@ final authenticatedDioProvider = Provider<Dio>(
     final auth = ref.watch(authServiceProvider);
 
     AuthInterceptor(
+      dio: dio,
       storage: storage,
       onTokenRefreshed: auth.refresh,
       onAuthFailed: () async {
         ref.read(authNotifierProvider.notifier).logout();
       },
-    ).attach(dio);
+    ).attach();
 
     return dio;
   },
