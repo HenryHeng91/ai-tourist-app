@@ -45,6 +45,17 @@ export interface AppConfig {
     baseUrl: string;
     validatePath: string;
   };
+  /** Server-side Google Places API key for POI data (NOT the user's AI key). */
+  googlePlaces: {
+    apiKey: string;
+    baseUrl: string;
+    enabled: boolean;
+  };
+  /** Wikidata SPARQL fallback for POI data when Google Places is unavailable. */
+  wikidata: {
+    enabled: boolean;
+    sparqlEndpoint: string;
+  };
 }
 
 export const config: AppConfig = {
@@ -65,5 +76,16 @@ export const config: AppConfig = {
   aiProvider: {
     baseUrl: process.env.AI_PROVIDER_BASE_URL ?? 'https://api.openai.com',
     validatePath: process.env.AI_PROVIDER_VALIDATE_PATH ?? '/v1/models',
+  },
+  googlePlaces: {
+    // Server-side POI key — NOT the user's AI key. Optional: POI sync is disabled
+    // when unset unless the Wikidata fallback is enabled.
+    apiKey: process.env.GOOGLE_PLACES_API_KEY ?? '',
+    baseUrl: process.env.GOOGLE_PLACES_BASE_URL ?? 'https://places.googleapis.com',
+    enabled: !!(process.env.GOOGLE_PLACES_API_KEY && process.env.GOOGLE_PLACES_API_KEY.length > 0),
+  },
+  wikidata: {
+    enabled: (process.env.WIKIDATA_FALLBACK_ENABLED ?? 'false').toLowerCase() === 'true',
+    sparqlEndpoint: process.env.WIKIDATA_SPARQL_ENDPOINT ?? 'https://query.wikidata.org/sparql',
   },
 };
