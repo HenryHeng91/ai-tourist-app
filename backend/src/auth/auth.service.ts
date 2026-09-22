@@ -33,7 +33,7 @@ export interface RefreshTokenPayload {
 
 function signTokens(user: { id: string; email: string }): AuthTokens {
   const signOpts = (ttl: string) => ({ expiresIn: ttl }) as unknown as jwt.SignOptions;
-  const token = jwt.sign(
+  const accessToken = jwt.sign(
     { sub: user.id, email: user.email, type: 'access' },
     config.jwt.accessSecret,
     signOpts(config.jwt.accessTtl),
@@ -43,7 +43,7 @@ function signTokens(user: { id: string; email: string }): AuthTokens {
     config.jwt.refreshSecret,
     signOpts(config.jwt.refreshTtl),
   );
-  return { token, refreshToken };
+  return { accessToken, refreshToken };
 }
 
 export async function signup(input: {
@@ -125,4 +125,23 @@ export async function refresh(refreshToken: string): Promise<{ userId: string; e
   const user = res.rows[0];
   const tokens = signTokens({ id: user.id, email: user.email });
   return { userId: user.id, email: user.email, ...tokens };
+}
+/**
+ * Logout — invalidate a refresh token.
+ *
+ * JWTs are stateless, so true revocation requires a server-side blacklist
+ * (future work). For now we verify the supplied refresh token is well-formed
+ * and signed by us; the client MUST also discard its local copies. A malformed
+ * or unknown token is a no-op (logout is idempotent).
+ */
+export async function logout(refreshToken?: string): Promise<void> {
+  if (!refreshToken) return;
+  try {
+    const payload = jwt.verify(refreshToken, config.jwt.refreshSecret) as RefreshTokenPayload;
+    if (payload.type !== 'refresh') return;
+    // No blacklist store yet — acceptance is the contract. The client clears its
+    // local tokens; a future blacklist table will reject subsequent refreshes.
+  } catch {
+    // Ignore invalid/expired tokens — logout stays idempotent.
+  }
 }

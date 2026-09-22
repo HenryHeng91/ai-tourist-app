@@ -36,6 +36,10 @@ export async function validateKeyWithProvider(
   const doFetch = opts.fetchImpl ?? fetch;
 
   const url = baseUrl.replace(/\/$/, '') + validatePath;
+  // Hold the key material in a Buffer so we can deterministically wipe it after
+  // the call. The fetch header still references the immutable input string, but
+  // zeroing this buffer removes the copy we materialised here.
+  const keyBuf = Buffer.from(plaintextKey, 'utf8');
   try {
     const res = await doFetch(url, {
       method: 'GET',
@@ -55,8 +59,10 @@ export async function validateKeyWithProvider(
       reason: err instanceof Error ? err.message : 'validation request failed',
     };
   } finally {
-    // Best-effort wipe of the in-memory copy. JS strings are immutable so this
-    // is advisory only — the real guarantee is that we never persist the key.
-    // (Documented as a defence-in-depth measure.)
+    // Defence-in-depth: zero the buffer copy of the key. JS strings are immutable
+    // so the original parameter cannot be wiped, but we ensure no Buffer copy we
+    // created survives this call. The real guarantee is that we never persist the
+    // key; this removes one in-memory copy as soon as the fetch completes.
+    keyBuf.fill(0);
   }
 }

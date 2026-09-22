@@ -23,7 +23,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type RefreshInput = z.infer<typeof refreshSchema>;
 
 export interface AuthTokens {
-  token: string;
+  accessToken: string;
   refreshToken: string;
 }
 
@@ -31,6 +31,6 @@ export interface AuthResponse {
   userId: string;
   email: string;
   displayName: string | null;
-  token: string;
+  accessToken: string;
   refreshToken: string;
 }

@@ -62,11 +62,11 @@ describe('authService (unit)', () => {
       expect(res.userId).toBe('user-alice@example.com');
       expect(res.email).toBe('alice@example.com');
       expect(res.displayName).toBe('Alice');
-      expect(res.token).toEqual(expect.any(String));
+      expect(res.accessToken).toEqual(expect.any(String));
       expect(res.refreshToken).toEqual(expect.any(String));
 
       // Access token decodes with the access secret and correct payload.
-      const decoded = jwt.verify(res.token, config.jwt.accessSecret) as {
+      const decoded = jwt.verify(res.accessToken, config.jwt.accessSecret) as {
         sub: string;
         email: string;
         type: string;
@@ -107,7 +107,7 @@ describe('authService (unit)', () => {
 
     it('returns tokens on valid credentials', async () => {
       const res = await authService.login({ email: 'login@example.com', password: 'password123' });
-      expect(res.token).toEqual(expect.any(String));
+      expect(res.accessToken).toEqual(expect.any(String));
       expect(res.refreshToken).toEqual(expect.any(String));
       expect(res.email).toBe('login@example.com');
     });
@@ -132,7 +132,7 @@ describe('authService (unit)', () => {
         password: 'password123',
       });
       const res = await authService.refresh(initial.refreshToken);
-      expect(res.token).toEqual(expect.any(String));
+      expect(res.accessToken).toEqual(expect.any(String));
       expect(res.refreshToken).toEqual(expect.any(String));
       expect(res.userId).toBe(initial.userId);
     });
@@ -158,26 +158,26 @@ describe('authService (unit)', () => {
 });
 
 describe('POST /auth/* (supertest)', () => {
-  it('POST /auth/signup -> 201 with tokens', async () => {
+  it('POST /auth/register -> 201 with tokens', async () => {
     const res = await request(app)
-      .post('/auth/signup')
+      .post('/auth/register')
       .send({ email: 'api@example.com', password: 'password123', displayName: 'Api' })
       .expect(201);
-    expect(res.body.token).toEqual(expect.any(String));
+    expect(res.body.accessToken).toEqual(expect.any(String));
     expect(res.body.refreshToken).toEqual(expect.any(String));
     expect(res.body.userId).toEqual(expect.any(String));
   });
 
-  it('POST /auth/signup -> 400 on invalid email', async () => {
+  it('POST /auth/register -> 400 on invalid email', async () => {
     await request(app)
-      .post('/auth/signup')
+      .post('/auth/register')
       .send({ email: 'not-an-email', password: 'password123' })
       .expect(400);
   });
 
-  it('POST /auth/signup -> 400 on short password', async () => {
+  it('POST /auth/register -> 400 on short password', async () => {
     await request(app)
-      .post('/auth/signup')
+      .post('/auth/register')
       .send({ email: 'short@example.com', password: 'short' })
       .expect(400);
   });
@@ -188,7 +188,7 @@ describe('POST /auth/* (supertest)', () => {
       .post('/auth/login')
       .send({ email: 'login2@example.com', password: 'password123' })
       .expect(200);
-    expect(res.body.token).toEqual(expect.any(String));
+    expect(res.body.accessToken).toEqual(expect.any(String));
   });
 
   it('POST /auth/login -> 401 on bad creds', async () => {
@@ -207,10 +207,29 @@ describe('POST /auth/* (supertest)', () => {
       .post('/auth/refresh')
       .send({ refreshToken: initial.refreshToken })
       .expect(200);
-    expect(res.body.token).toEqual(expect.any(String));
+    expect(res.body.accessToken).toEqual(expect.any(String));
   });
 
   it('POST /auth/refresh -> 401 on garbage', async () => {
     await request(app).post('/auth/refresh').send({ refreshToken: 'garbage' }).expect(401);
+  });
+
+  it('POST /auth/logout -> 204 with refresh token in body', async () => {
+    const initial = await authService.signup({
+      email: 'logout@example.com',
+      password: 'password123',
+    });
+    await request(app)
+      .post('/auth/logout')
+      .send({ refreshToken: initial.refreshToken })
+      .expect(204);
+  });
+
+  it('POST /auth/logout -> 204 with no body (idempotent)', async () => {
+    await request(app).post('/auth/logout').expect(204);
+  });
+
+  it('POST /auth/logout -> 204 with garbage token (idempotent)', async () => {
+    await request(app).post('/auth/logout').send({ refreshToken: 'garbage' }).expect(204);
   });
 });

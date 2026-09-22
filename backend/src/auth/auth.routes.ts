@@ -10,7 +10,7 @@ import { signupSchema, loginSchema, refreshSchema } from './auth.schema';
 export const authRouter = Router();
 
 authRouter.post(
-  '/signup',
+  '/register',
   validate({ body: signupSchema }),
   asyncHandler(async (req, res) => {
     const result = await authService.signup(req.body);
@@ -33,5 +33,17 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const result = await authService.refresh(req.body.refreshToken);
     res.status(200).json(result);
+  }),
+);
+
+authRouter.post(
+  '/logout',
+  asyncHandler(async (req, res) => {
+    // refreshToken is optional — the client may send it in the body or simply
+    // clear its local copies. Logout is idempotent.
+    const refreshToken =
+      typeof req.body?.refreshToken === 'string' ? req.body.refreshToken : undefined;
+    await authService.logout(refreshToken);
+    res.status(204).end();
   }),
 );

@@ -82,7 +82,7 @@ beforeEach(() => {
 
 async function signupAndToken(email: string): Promise<{ userId: string; token: string }> {
   const r = await authService.signup({ email, password: 'password123' });
-  return { userId: r.userId, token: r.token };
+  return { userId: r.userId, token: r.accessToken };
 }
 
 describe('keyVaultService (unit)', () => {
