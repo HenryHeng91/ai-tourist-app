@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -19,6 +21,14 @@ class AudioPlayerController extends StateNotifier<VoiceoverPlayback> {
         super(const VoiceoverPlayback());
 
   final AudioPlayer _player;
+
+  // Stream subscriptions created by [_listenToPlayer]. Kept as fields so
+  // we can cancel the previous subscription before creating a new one —
+  // otherwise every play() call stacks another listener and we'd get
+  // duplicate state updates (and a slow leak).
+  StreamSubscription<Duration>? _positionSub;
+  StreamSubscription<Duration?>? _durationSub;
+  StreamSubscription<ProcessingState>? _processingSub;
 
   /// Loads audio bytes (provider TTS) and transitions to `playing`.
   Future<void> playBytes(List<int> bytes) async {
@@ -90,20 +100,28 @@ class AudioPlayerController extends StateNotifier<VoiceoverPlayback> {
   /// Releases the underlying player. Call when the widget is disposed.
   @override
   void dispose() {
+    _positionSub?.cancel();
+    _durationSub?.cancel();
+    _processingSub?.cancel();
     _player.dispose();
     super.dispose();
   }
 
   void _listenToPlayer() {
-    _player.positionStream.listen((pos) {
+    // Cancel any subscriptions left over from a previous play() call so
+    // we never have more than one listener per stream at a time.
+    _positionSub?.cancel();
+    _durationSub?.cancel();
+    _processingSub?.cancel();
+    _positionSub = _player.positionStream.listen((pos) {
       state = state.copyWith(positionMs: pos.inMilliseconds);
     });
-    _player.durationStream.listen((dur) {
+    _durationSub = _player.durationStream.listen((dur) {
       if (dur != null) {
         state = state.copyWith(durationMs: dur.inMilliseconds);
       }
     });
-    _player.processingStateStream.listen((ps) {
+    _processingSub = _player.processingStateStream.listen((ps) {
       if (ps == ProcessingState.completed) {
         state = state.copyWith(
           state: VoiceoverPlaybackState.stopped,

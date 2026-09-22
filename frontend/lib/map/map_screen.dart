@@ -12,6 +12,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart'
 
 import '../location/location_models.dart' show LatLng, LocationState;
 import '../location/location_provider.dart';
+import '../geofence/geofence_voiceover_controller.dart';
 import 'map_controller.dart';
 import 'map_models.dart';
 import 'spot_markers.dart';
@@ -84,6 +85,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   Widget build(BuildContext context) {
     final location = ref.watch(locationNotifierProvider);
     final mapState = ref.watch(mapNotifierProvider);
+    // Keep the geofence→voiceover wiring alive while the map is mounted
+    // (REQ-LOC-3): this subscribes to geofence enter events and triggers
+    // the voiceover flow when the user enters a spot's radius.
+    ref.watch(geofenceVoiceoverControllerProvider);
 
 
     return Scaffold(

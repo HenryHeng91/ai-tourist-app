@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/auth_providers.dart';
@@ -26,8 +28,17 @@ class MapNotifier extends StateNotifier<MapState> {
 
   /// Updates the user's position from the location stream. Cheap —
   /// doesn't refetch spots unless the user has moved > [refetchThresholdMeters].
+  ///
+  /// Also feeds the position to the geofence evaluator so it can emit
+  /// enter/exit transitions (REQ-LOC-3). The platform geofence backend
+  /// ignores the call (the OS calls back directly); the in-memory
+  /// backend computes transitions here. The emitted events are consumed
+  /// by [GeofenceVoiceoverController] (see geofence_voiceover_controller.dart).
   void updateUserPosition(LatLng position) {
     state = state.copyWith(userPosition: position, error: null);
+    // Fire-and-forget: the geofence service emits on a broadcast stream;
+    // we don't need to await it here.
+    unawaited(_geofence.onPosition(position));
   }
 
   /// Fetches spots near the user's current position and registers

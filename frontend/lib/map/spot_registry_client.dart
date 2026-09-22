@@ -30,7 +30,9 @@ class SpotRegistryClient {
         'limit': limit,
       },
     );
-    final data = response.data as List;
+    // Backend wraps the list: { "spots": [ ... ] } (see spots.routes.ts).
+    final body = response.data as Map<String, dynamic>;
+    final data = body['spots'] as List;
     return data
         .cast<Map<String, dynamic>>()
         .map(TouristSpot.fromJson)
@@ -38,6 +40,9 @@ class SpotRegistryClient {
   }
 
   /// Fetches the full spot record (with metadata) by id.
+  ///
+  /// The backend returns a single (unwrapped) spot object for
+  /// `GET /spots/:id` — only the list endpoint is wrapped in `{ "spots": [] }`.
   Future<TouristSpot> byId(String id) async {
     final response = await _dio.get('/spots/$id');
     return TouristSpot.fromJson(response.data as Map<String, dynamic>);

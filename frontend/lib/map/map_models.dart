@@ -26,15 +26,15 @@ class TouristSpot {
   final String? description;
 
   factory TouristSpot.fromJson(Map<String, dynamic> json) {
-    final geom = json['geom'] as Map<String, dynamic>;
-    // Backend returns GeoJSON Point: { "type": "Point", "coordinates": [lng, lat] }
-    final coords = geom['coordinates'] as List;
+    // Backend serializes spots with flat `lat`/`lng` fields (see
+    // spots.service.ts → toSummary/toFull which extract ST_Y/ST_X into
+    // top-level lat/lng). There is no GeoJSON `geom` field on the wire.
     return TouristSpot(
       id: json['id'] as String,
       name: json['name'] as String,
       location: LatLng(
-        latitude: (coords[1] as num).toDouble(),
-        longitude: (coords[0] as num).toDouble(),
+        latitude: (json['lat'] as num).toDouble(),
+        longitude: (json['lng'] as num).toDouble(),
       ),
       geofenceRadiusMeters:
           (json['geofenceRadiusM'] as num?)?.toDouble() ?? 200.0,
@@ -46,10 +46,8 @@ class TouristSpot {
   Map<String, dynamic> toJson() => {
         'id': id,
         'name': name,
-        'geom': {
-          'type': 'Point',
-          'coordinates': [location.longitude, location.latitude],
-        },
+        'lat': location.latitude,
+        'lng': location.longitude,
         'geofenceRadiusM': geofenceRadiusMeters,
         if (category != null) 'category': category,
         if (description != null) 'description': description,

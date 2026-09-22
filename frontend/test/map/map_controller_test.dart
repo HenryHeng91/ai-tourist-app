@@ -19,6 +19,12 @@ void main() {
       geofence = MockGeofenceService();
       notifier = MapNotifier(client, geofence);
       registerFallbackValue(<GeofenceRegion>[]);
+      registerFallbackValue(const LatLng(latitude: 0, longitude: 0));
+      // updateUserPosition now feeds the geofence evaluator; stub it so
+      // mocktail doesn't throw MissingStubError.
+      when(() => geofence.onPosition(any(),
+              timestamp: any(named: 'timestamp')))
+          .thenAnswer((_) async {});
     });
 
     test('updateUserPosition sets the position', () {
@@ -26,6 +32,15 @@ void main() {
       notifier.updateUserPosition(pos);
       expect(notifier.state.userPosition, pos);
       expect(notifier.state.error, isNull);
+    });
+
+    test('updateUserPosition feeds the position to the geofence service',
+        () async {
+      const pos = LatLng(latitude: 48.8584, longitude: 2.2945);
+      notifier.updateUserPosition(pos);
+      // Drain the microtask queue so the unawaited onPosition call lands.
+      await Future<void>.delayed(Duration.zero);
+      verify(() => geofence.onPosition(pos)).called(1);
     });
 
     test('refreshSpots returns empty when no user position', () async {
@@ -88,14 +103,14 @@ void main() {
   });
 
   group('TouristSpot', () {
-    test('parses GeoJSON Point from the backend', () {
+    test('parses flat lat/lng from the backend', () {
+      // Backend serializes spots with flat top-level lat/lng (see
+      // spots.service.ts → toSummary), NOT a GeoJSON `geom` field.
       final json = {
         'id': 's1',
         'name': 'Eiffel Tower',
-        'geom': {
-          'type': 'Point',
-          'coordinates': [2.2945, 48.8584], // [lng, lat]
-        },
+        'lat': 48.8584,
+        'lng': 2.2945,
         'geofenceRadiusM': 250,
         'category': 'landmark',
       };
@@ -112,10 +127,8 @@ void main() {
       final json = {
         'id': 's1',
         'name': 'Spot',
-        'geom': {
-          'type': 'Point',
-          'coordinates': [0, 0],
-        },
+        'lat': 0.0,
+        'lng': 0.0,
       };
       final spot = TouristSpot.fromJson(json);
       expect(spot.geofenceRadiusMeters, 200);

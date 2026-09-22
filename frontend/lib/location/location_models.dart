@@ -71,6 +71,42 @@ enum LocationPermissionStatus {
   serviceDisabled,
 }
 
+/// Domain GPS position fix. Kept platform-agnostic so the rest of the
+/// app (providers, map, geofence) never imports `package:geolocator` —
+/// [GpsService] adapts from the platform `Position` to this type at the
+/// edge.
+class PositionFix {
+  const PositionFix({
+    required this.latitude,
+    required this.longitude,
+    this.accuracy,
+    this.timestamp,
+  });
+
+  final double latitude;
+  final double longitude;
+
+  /// Estimated accuracy in metres (CEP-68 on most platforms).
+  final double? accuracy;
+  final DateTime? timestamp;
+
+  /// Convenience projection to the lat/lng value type used by the map
+  /// and geofence math.
+  LatLng toLatLng() => LatLng(latitude: latitude, longitude: longitude);
+
+  @override
+  bool operator ==(Object other) =>
+      other is PositionFix &&
+      other.latitude == latitude &&
+      other.longitude == longitude;
+
+  @override
+  int get hashCode => Object.hash(latitude, longitude);
+
+  @override
+  String toString() => 'PositionFix($latitude, $longitude, acc=$accuracy)';
+}
+
 /// Snapshot of the location module state for the UI.
 class LocationState {
   const LocationState({

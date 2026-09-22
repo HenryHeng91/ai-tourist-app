@@ -93,17 +93,26 @@ class GpsService {
   /// The caller (LocationProvider) is responsible for cancelling the
   /// subscription when the app goes to background — background tracking
   /// uses [BackgroundLocationTracker] instead.
-  Stream<Position> positionStream({
+  ///
+  /// Returns a domain [PositionFix] so callers never see the platform
+  /// `geolocator` `Position` type (keeps the domain boundary clean).
+  Stream<PositionFix> positionStream({
     LocationAccuracy desiredAccuracy = LocationAccuracy.high,
-    Duration interval = const Duration(seconds: 5),
   }) {
-    return _platform.getPositionStream(
-      LocationSettings(
-        accuracy: desiredAccuracy,
-        timeLimit: const Duration(seconds: 15),
-        distanceFilter: 10, // metres — avoid spamming on small jitter
-      ),
-    );
+    return _platform
+        .getPositionStream(
+          LocationSettings(
+            accuracy: desiredAccuracy,
+            timeLimit: const Duration(seconds: 15),
+            distanceFilter: 10, // metres — avoid spamming on small jitter
+          ),
+        )
+        .map((p) => PositionFix(
+              latitude: p.latitude,
+              longitude: p.longitude,
+              accuracy: p.accuracy,
+              timestamp: p.timestamp,
+            ));
   }
 
   static LocationPermissionStatus _mapPermission(LocationPermission p) {

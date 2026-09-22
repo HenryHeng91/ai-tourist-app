@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:geolocator/geolocator.dart';
+
 
 import 'gps_service.dart';
 import 'background_location_tracker.dart';
@@ -104,7 +104,10 @@ final locationNotifierProvider =
 
 /// Re-exposes the foreground position stream for the map controller.
 /// The map screen listens to this and re-centers on the user.
-final positionStreamProvider = StreamProvider<Position>(
+///
+/// Emits the domain [PositionFix] (not the platform `geolocator`
+/// `Position`) so downstream consumers stay platform-agnostic.
+final positionStreamProvider = StreamProvider<PositionFix>(
   (ref) {
     final gps = ref.watch(gpsServiceProvider);
     return gps.positionStream();

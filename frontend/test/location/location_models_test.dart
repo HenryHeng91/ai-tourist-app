@@ -95,4 +95,32 @@ void main() {
       expect(LocationPermissionStatus.values.length, 6);
     });
   });
+
+  group('PositionFix', () {
+    test('toLatLng projects latitude/longitude', () {
+      const fix = PositionFix(
+        latitude: 48.8584,
+        longitude: 2.2945,
+        accuracy: 5.0,
+      );
+      expect(fix.toLatLng(), const LatLng(latitude: 48.8584, longitude: 2.2945));
+    });
+
+    test('equality is by lat/lng (ignores accuracy/timestamp)', () {
+      final a = PositionFix(
+        latitude: 1,
+        longitude: 2,
+        accuracy: 5,
+        timestamp: DateTime(2020),
+      );
+      final b = PositionFix(
+        latitude: 1,
+        longitude: 2,
+        accuracy: 99,
+        timestamp: DateTime(2024),
+      );
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+    });
+  });
 }
