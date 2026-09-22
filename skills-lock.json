@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "playwright-cli": {
+      "source": "microsoft/playwright-cli",
+      "sourceType": "github",
+      "skillPath": "skills/playwright-cli/SKILL.md",
+      "computedHash": "09eed98ea76073cf14ca967ed222db08c42407b4db02149a7b4be04b2736ae6f"
+    },
+    "skill-installer": {
+      "source": "CodeArtsAgent/CodeArtsSkills",
+      "sourceType": "github",
+      "skillPath": "skills/skill-installer/SKILL.md",
+      "computedHash": "c1c42f66fd2f87e2a3daf66be11c3bf8bdde75034c86bd87bf3bb46da77443f5"
+    }
+  }
+}
