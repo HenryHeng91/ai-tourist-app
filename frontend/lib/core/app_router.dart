@@ -5,13 +5,17 @@ import 'package:go_router/go_router.dart';
 import '../auth/auth_providers.dart';
 import '../auth/auth_screens.dart';
 import '../core/home_shell.dart';
+import '../map/map_screen.dart';
 import '../settings/settings_screen.dart';
+import '../voiceover/voiceover_screen.dart';
 
 /// Builds the app's [GoRouter] with auth redirect logic.
 ///
 /// Routes:
 ///   /login, /signup — public
 ///   /                — home shell (map tab)
+///   /map             — full-screen map (Sprint 2)
+///   /voiceover/:spotId — voiceover flow for a spot (Sprint 2)
 ///   /group           — home shell (group tab)
 ///   /settings        — home shell (settings tab)
 GoRouter buildAppRouter(Ref ref) {
@@ -59,6 +63,18 @@ GoRouter buildAppRouter(Ref ref) {
             builder: (context, state) => const SettingsScreen(),
           ),
         ],
+      ),
+      // Full-screen map (outside the shell — no bottom nav).
+      GoRoute(
+        path: MapScreen.route,
+        builder: (context, state) => const MapScreen(),
+      ),
+      // Voiceover flow for a specific spot.
+      GoRoute(
+        path: '${VoiceoverScreen.route}/:spotId',
+        builder: (context, state) => VoiceoverScreen(
+          spotId: state.pathParameters['spotId']!,
+        ),
       ),
     ],
   );

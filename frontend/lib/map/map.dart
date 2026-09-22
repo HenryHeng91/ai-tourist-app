@@ -1,3 +1,9 @@
 /// Map module — render map, user marker, member markers, spot markers.
-/// Implemented in Sprint 2 (task 3.2.4).
+/// Public surface re-exported here for convenience imports.
 library;
+
+export 'map_controller.dart';
+export 'map_models.dart';
+export 'map_screen.dart';
+export 'spot_markers.dart';
+export 'spot_registry_client.dart';

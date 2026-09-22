@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/auth_providers.dart';
+import '../map/map_screen.dart';
 import '../settings/settings_screen.dart';
 
 /// Home shell — bottom nav with Map / Group / Settings tabs.
@@ -62,31 +63,15 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   }
 }
 
-/// Placeholder map tab — real map lands in Sprint 2 (task 3.2.4).
+/// Map tab — wraps the real [MapScreen] (Sprint 2). Kept as a thin
+/// wrapper so the bottom-nav shell can embed it without an AppBar
+/// duplication (MapScreen brings its own AppBar).
 class MapTab extends StatelessWidget {
   const MapTab({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.map_outlined, size: 64),
-            SizedBox(height: 16),
-            Text('Map', style: TextStyle(fontSize: 20)),
-            SizedBox(height: 8),
-            Text(
-              'Nearby tourist spots and your live location will appear here '
-              'in Sprint 2.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+    return const MapScreen();
   }
 }
 
