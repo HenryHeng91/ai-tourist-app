@@ -1,0 +1,93 @@
+# =============================================================================
+# AI Tourist App - Root .gitignore
+# =============================================================================
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment & secrets (CRITICAL)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+*.env
+
+# Credentials & keys
+credentials*.json
+*credentials*.json
+*secret*
+*private*.key
+*.pem
+*.crt
+*.key
+service-account*.json
+*service-account*.json
+
+# Google Maps
+*.json
+!package.json
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# Cache
+.cache/
+.vite/
+.eslintcache
+.oxlintcache
+.cache/
+
+# CodeArts
+.codeartsdoer/
+
+# Task reports (optional - uncomment if you don't want these in git)
+# task-reports/
+
+# Docker (optional)
+docker-compose.override.yml
+
+# Windows reserved names (nul, con, prn, etc.)
+[Cc][Oo][Nn]|
+[Pp][Rr][Nn]|
+[Aa][Uu][Xx]|
+[Nn][Uu][Ll]|
+[Ll][Pp][Tt][0-9]|
+[Cc][Oo][Mm][0-9]
+demo/

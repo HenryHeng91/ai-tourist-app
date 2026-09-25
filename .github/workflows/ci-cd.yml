@@ -1,0 +1,116 @@
+name: CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+      - main
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  # --- Build Stage (always included with GitHub) ---
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ============================================
+      # FRONTEND (React + Vercel)
+      # ============================================
+      - name: Setup Node.js for Frontend
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ai-tourist-app-fe/package-lock.json
+
+      - name: Install Frontend dependencies
+        run: npm install
+        working-directory: ./ai-tourist-app-fe
+
+      - name: Run Frontend tests
+        run: npm test -- --coverage --passWithNoTests
+        working-directory: ./ai-tourist-app-fe
+
+      - name: Build Frontend
+        run: npm run build
+        working-directory: ./ai-tourist-app-fe
+
+      # ============================================
+      # BACKEND (Node.js/TypeScript)
+      # ============================================
+      - name: Setup Node.js for Backend
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ai-tourist-app-be/package-lock.json
+
+      - name: Install Backend dependencies
+        run: npm install
+        working-directory: ./ai-tourist-app-be
+
+      - name: Run Backend tests
+        run: npm test
+        working-directory: ./ai-tourist-app-be
+
+      - name: Build Backend
+        run: npm run build
+        working-directory: ./ai-tourist-app-be
+
+  # --- Vercel Deployment (Frontend) ---
+  deploy-frontend:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Pull Vercel Environment
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./ai-tourist-app-fe
+
+      - name: Build Web App
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./ai-tourist-app-fe
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./ai-tourist-app-fe
+
+  # --- Backend Deployment ---
+  deploy-backend:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Railway/Render
+        # Placeholder: Configure your preferred backend hosting
+        # Options: Railway, Render, Fly.io, AWS ECS
+        run: |
+          echo "Configure backend deployment here"
+          echo "Recommended: Railway (railway.app) or Render"
+          # Example for Railway:
+          # railway login --token=${{ secrets.RAILWAY_TOKEN }}
+          # railway up --service backend

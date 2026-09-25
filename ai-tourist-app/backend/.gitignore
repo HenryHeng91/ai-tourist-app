@@ -1,0 +1,23 @@
+# deps
+node_modules/
+coverage/
+dist/
+build/
+
+# env / secrets — NEVER commit
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# logs
+*.log
+logs/
+npm-debug.log*
+
+# editor / os
+.DS_Store
+.vscode/
+.idea/
+*.swp

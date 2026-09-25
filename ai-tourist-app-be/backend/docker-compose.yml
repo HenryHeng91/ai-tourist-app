@@ -1,0 +1,64 @@
+# Postgres + PostGIS dev database for the AI Travel Guide backend.
+# Usage: docker compose up -d && npm run migrate
+#
+# Services:
+#   postgres  — primary database (PostGIS image, geometry/gist support)
+#   redis     — pub/sub + caching for the location broadcast service
+#   pgadmin   — optional web UI for browsing the database (http://localhost:5050)
+#
+# Default credentials are dev-only. Override in production via secrets.
+version: "3.9"
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: aitg-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ai_travel_guide
+    ports:
+      - "5432:5432"
+    volumes:
+      - aitg_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ai_travel_guide"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: aitg-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Optional admin UI. Login: admin@aitg.local / admin (change for non-dev use).
+  # Set PGADMIN_DISABLE=true to skip starting this container.
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: aitg-pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@aitg.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 80
+      PGADMIN_DISABLE_SERVER_CHECK: "true"
+    ports:
+      - "5050:80"
+    volumes:
+      - aitg_pgadmin_data:/var/lib/pgadmin
+
+volumes:
+  aitg_pg_data:
+  aitg_pgadmin_data:
