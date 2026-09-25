@@ -114,6 +114,7 @@ describe('AddKeyModal', () => {
     const onAdded = vi.fn();
     const onClose = vi.fn();
     mocks.addKey.mockResolvedValueOnce({
+      id: '00000000-0000-0000-0000-000000000001',
       provider: 'openai',
       hasKey: true,
       isValid: true,

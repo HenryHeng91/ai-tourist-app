@@ -91,8 +91,14 @@ export interface EncryptedBlob {
 /**
  * Server-returned metadata for a stored key. The server NEVER returns the
  * ciphertext blob; this shape mirrors `StoredKeyMeta` in the backend.
+ *
+ * `id` is the UUID used to address the row on the backend (`/keys/:id`). The
+ * provider name is still exposed for display / grouping, but it is NOT used
+ * to address the row.
  */
 export interface StoredKeyMeta {
+  /** UUID used to address this row on the backend (GET/DELETE `/keys/:id`). */
+  id: string;
   provider: string;
   hasKey: boolean;
   isValid: boolean;

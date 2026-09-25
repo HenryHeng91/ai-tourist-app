@@ -72,7 +72,7 @@ describe('auth api', () => {
       expect(payload).not.toHaveProperty('displayName');
     });
 
-    it('surfaces upstream errors with backend code', async () => {
+    it('surfaces upstream errors with backend code and a friendly message', async () => {
       mocks.post.mockRejectedValueOnce({
         isAxios: true,
         message: 'Request failed',
@@ -84,7 +84,8 @@ describe('auth api', () => {
       });
       await expect(signup({ email: 'a@b.com', password: 'hunter12pw' })).rejects.toMatchObject({
         code: 'EMAIL_TAKEN',
-        message: 'Email already registered',
+        // Friendly rewrite: the UI never shows "Email already registered".
+        message: 'An account with that email already exists. Try signing in instead.',
         status: 409,
       });
     });
@@ -101,7 +102,7 @@ describe('auth api', () => {
       );
     });
 
-    it('maps 401 to INVALID_CREDENTIALS-shaped errors', async () => {
+    it('maps 401 to INVALID_CREDENTIALS-shaped errors with a friendly message', async () => {
       mocks.post.mockRejectedValueOnce({
         isAxios: true,
         message: 'Request failed',
@@ -113,6 +114,8 @@ describe('auth api', () => {
       });
       await expect(login({ email: 'a@b.com', password: 'wrong' })).rejects.toMatchObject({
         code: 'INVALID_CREDENTIALS',
+        // Friendly rewrite: the UI never shows "Bad creds".
+        message: 'Incorrect email or password.',
         status: 401,
       });
     });

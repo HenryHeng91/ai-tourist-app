@@ -5,7 +5,7 @@
  *   1. User picks a provider (openai | anthropic | google | xai).
  *   2. User pastes the API key (masked input, type=password).
  *   3. User enters a passphrase used to derive the per-user KEK.
- *   4. Submit → encrypt locally → POST /me/keys with the blob.
+ *   4. Submit → encrypt locally → POST /keys with the blob.
  *   5. On success → call the optional onSuccess callback and close.
  *
  * SECURITY: the plaintext key never leaves this form's local state until

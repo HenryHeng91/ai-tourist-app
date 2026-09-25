@@ -25,6 +25,7 @@ const VALID_IV = bytesToBase64(new Uint8Array(12));
 const VALID_TAG = bytesToBase64(new Uint8Array(16));
 
 const meta: StoredKeyMeta = {
+  id: '00000000-0000-0000-0000-000000000001',
   provider: 'openai',
   hasKey: true,
   isValid: true,
@@ -51,7 +52,7 @@ describe('keyVault api', () => {
       authTag: VALID_TAG,
     });
     expect(result).toEqual(meta);
-    expect(post).toHaveBeenCalledWith('/me/keys', {
+    expect(post).toHaveBeenCalledWith('/keys', {
       provider: 'openai',
       ciphertext: VALID_CT,
       iv: VALID_IV,
@@ -73,7 +74,7 @@ describe('keyVault api', () => {
       authTag: VALID_TAG,
       isValid: false,
     });
-    expect(post).toHaveBeenCalledWith('/me/keys', {
+    expect(post).toHaveBeenCalledWith('/keys', {
       provider: 'openai',
       ciphertext: VALID_CT,
       iv: VALID_IV,
@@ -86,26 +87,27 @@ describe('keyVault api', () => {
     get.mockResolvedValueOnce({ data: { keys: [meta] } });
     const result = await listKeys();
     expect(result).toEqual([meta]);
-    expect(get).toHaveBeenCalledWith('/me/keys');
+    expect(get).toHaveBeenCalledWith('/keys');
   });
 
-  it('getKey fetches a single provider', async () => {
+  it('getKey fetches a single row by UUID id', async () => {
     get.mockResolvedValueOnce({ data: meta });
-    const result = await getKey('openai');
+    const result = await getKey(meta.id);
     expect(result).toEqual(meta);
-    expect(get).toHaveBeenCalledWith('/me/keys/openai');
+    expect(get).toHaveBeenCalledWith('/keys/00000000-0000-0000-0000-000000000001');
   });
 
-  it('getKey URL-encodes the provider name', async () => {
+  it('getKey URL-encodes the id (defensive, even though UUIDs are URL-safe)', async () => {
     get.mockResolvedValueOnce({ data: meta });
-    await getKey('my provider/x');
-    expect(get).toHaveBeenCalledWith('/me/keys/my%20provider%2Fx');
+    // Build an id that contains characters needing encoding.
+    await getKey('id with space/and/slash');
+    expect(get).toHaveBeenCalledWith('/keys/id%20with%20space%2Fand%2Fslash');
   });
 
   it('deleteKey issues a DELETE and returns void', async () => {
     del.mockResolvedValueOnce({});
-    await expect(deleteKey('openai')).resolves.toBeUndefined();
-    expect(del).toHaveBeenCalledWith('/me/keys/openai');
+    await expect(deleteKey(meta.id)).resolves.toBeUndefined();
+    expect(del).toHaveBeenCalledWith('/keys/00000000-0000-0000-0000-000000000001');
   });
 
   it('surfaces upstream errors', async () => {
