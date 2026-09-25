@@ -138,7 +138,7 @@ export async function deriveKey(
  *
  * A fresh 12-byte IV is generated for every call. The output bundle
  * (ciphertext, iv, authTag) is base64-encoded and matches the
- * `EncryptedBlob` wire format expected by `POST /me/keys`.
+ * `EncryptedBlob` wire format expected by `POST /keys`.
  */
 export async function encrypt(
   plaintext: string,

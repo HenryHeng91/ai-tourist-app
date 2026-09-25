@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   removeKey: vi.fn(),
   validateKey: vi.fn(),
   keys: [] as Array<{
+    id: string;
     provider: string;
     hasKey: boolean;
     isValid: boolean;
@@ -30,6 +31,9 @@ vi.mock('./store', () => ({
     { getState: () => mocks },
   ),
 }));
+
+const ID_OPENAI = '00000000-0000-0000-0000-000000000001';
+const ID_ANTHROPIC = '00000000-0000-0000-0000-000000000002';
 
 beforeEach(() => {
   mocks.fetchKeys.mockReset();
@@ -74,8 +78,8 @@ describe('MyKeysPage', () => {
 
   it('lists stored keys by provider label', async () => {
     mocks.keys = [
-      { provider: 'openai', hasKey: true, isValid: true, validatedAt: '2026-01-01T00:00:00Z' },
-      { provider: 'anthropic', hasKey: true, isValid: true, validatedAt: '2026-02-01T00:00:00Z' },
+      { id: ID_OPENAI, provider: 'openai', hasKey: true, isValid: true, validatedAt: '2026-01-01T00:00:00Z' },
+      { id: ID_ANTHROPIC, provider: 'anthropic', hasKey: true, isValid: true, validatedAt: '2026-02-01T00:00:00Z' },
     ];
     render(
       <MemoryRouter>
@@ -117,10 +121,10 @@ describe('MyKeysPage', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
-  it('triggers validateKey when the row Validate button is clicked', async () => {
+  it('triggers validateKey with the row id when the row Validate button is clicked', async () => {
     const user = userEvent.setup();
     mocks.keys = [
-      { provider: 'openai', hasKey: true, isValid: true, validatedAt: '2026-01-01T00:00:00Z' },
+      { id: ID_OPENAI, provider: 'openai', hasKey: true, isValid: true, validatedAt: '2026-01-01T00:00:00Z' },
     ];
     render(
       <MemoryRouter>
@@ -128,13 +132,14 @@ describe('MyKeysPage', () => {
       </MemoryRouter>,
     );
     await user.click(screen.getByRole('button', { name: /Validate OpenAI/i }));
-    await waitFor(() => expect(mocks.validateKey).toHaveBeenCalledWith('openai'));
+    // Backend is addressed by UUID id, NOT provider.
+    await waitFor(() => expect(mocks.validateKey).toHaveBeenCalledWith(ID_OPENAI));
   });
 
-  it('triggers removeKey when Delete is confirmed', async () => {
+  it('triggers removeKey with the row id when Delete is confirmed', async () => {
     const user = userEvent.setup();
     mocks.keys = [
-      { provider: 'openai', hasKey: true, isValid: true, validatedAt: '2026-01-01T00:00:00Z' },
+      { id: ID_OPENAI, provider: 'openai', hasKey: true, isValid: true, validatedAt: '2026-01-01T00:00:00Z' },
     ];
     window.confirm = vi.fn(() => true);
     render(
@@ -143,13 +148,14 @@ describe('MyKeysPage', () => {
       </MemoryRouter>,
     );
     await user.click(screen.getByRole('button', { name: /Delete OpenAI/i }));
-    await waitFor(() => expect(mocks.removeKey).toHaveBeenCalledWith('openai'));
+    // Backend is addressed by UUID id, NOT provider.
+    await waitFor(() => expect(mocks.removeKey).toHaveBeenCalledWith(ID_OPENAI));
   });
 
   it('does NOT trigger removeKey when confirm is cancelled', async () => {
     const user = userEvent.setup();
     mocks.keys = [
-      { provider: 'openai', hasKey: true, isValid: true, validatedAt: '2026-01-01T00:00:00Z' },
+      { id: ID_OPENAI, provider: 'openai', hasKey: true, isValid: true, validatedAt: '2026-01-01T00:00:00Z' },
     ];
     window.confirm = vi.fn(() => false);
     render(

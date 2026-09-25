@@ -1,9 +1,10 @@
 /**
  * "My Keys" page — list of stored API keys + delete + validate actions.
  *
- * SECURITY: this view NEVER shows plaintext. Each row is identified only
- * by its provider; the only data shown is the server-returned metadata
- * (`hasKey`, `isValid`, `validatedAt`).
+ * SECURITY: this view NEVER shows plaintext. Each row is identified by its
+ * UUID `id` (used to address the backend at `/keys/:id`); the only data
+ * shown is the server-returned metadata (`provider`, `hasKey`, `isValid`,
+ * `validatedAt`).
  */
 
 import { useEffect, useMemo, useState } from 'react';
@@ -57,7 +58,7 @@ export function MyKeysPage(): JSX.Element {
     );
     if (!ok) return;
     try {
-      await removeKey(meta.provider);
+      await removeKey(meta.id);
     } catch (err) {
       // Error is already on the store; nothing else to do here.
       void err;
@@ -65,7 +66,7 @@ export function MyKeysPage(): JSX.Element {
   }
 
   async function handleValidate(meta: StoredKeyMeta): Promise<void> {
-    await validateKey(meta.provider);
+    await validateKey(meta.id);
   }
 
   return (
@@ -143,7 +144,7 @@ export function MyKeysPage(): JSX.Element {
               const statusLabel = v?.status ?? 'unknown';
               const reason = v?.reason ?? null;
               return (
-                <tr key={meta.provider} style={{ borderTop: '1px solid var(--color-border)' }}>
+                <tr key={meta.id} style={{ borderTop: '1px solid var(--color-border)' }}>
                   <td style={{ padding: 'var(--space-2) var(--space-3)' }}>{providerLabel(meta.provider)}</td>
                   <td style={{ padding: 'var(--space-2) var(--space-3)' }}>
                     <StatusBadge isValid={meta.isValid} status={statusLabel} reason={reason} />

@@ -53,8 +53,15 @@ export interface KeyVaultState {
   // ── actions ───────────────────────────────────────────────────────
   fetchKeys: () => Promise<void>;
   addKey: (input: AddKeyInput) => Promise<StoredKeyMeta>;
-  removeKey: (provider: string) => Promise<void>;
-  validateKey: (provider: string) => Promise<ProviderValidationState>;
+  /**
+   * Remove a stored key. Addressed by row `id` (UUID) — NOT by provider, since
+   * the backend keys are id-addressed (`/keys/:id`).
+   */
+  removeKey: (id: string) => Promise<void>;
+  /**
+   * Validate a stored key. Addressed by row `id` (UUID).
+   */
+  validateKey: (id: string) => Promise<ProviderValidationState>;
   unlockKey: (provider: string, passphrase: string) => Promise<void>;
   lockKey: (provider: string) => void;
   lockAll: () => void;
@@ -137,14 +144,17 @@ export const useKeyVaultStore = create<KeyVaultState>((set, get) => ({
     }
   },
 
-  async removeKey(provider) {
+  async removeKey(id) {
     set({ isSubmitting: true, error: null });
     try {
-      await api.deleteKey(provider);
-      releasePlaintextKey(provider);
+      // Resolve the provider BEFORE the delete so we can clean up the
+      // per-provider validation map (the validation map is keyed by provider).
+      const meta = get().keys.find((k) => k.id === id);
+      await api.deleteKey(id);
+      if (meta) releasePlaintextKey(meta.provider);
       const validation = get().validation;
       const nextValidation: Record<string, ProviderValidationState> = { ...validation };
-      delete nextValidation[provider];
+      if (meta) delete nextValidation[meta.provider];
       const keys = await api.listKeys();
       set({
         keys,
@@ -158,20 +168,24 @@ export const useKeyVaultStore = create<KeyVaultState>((set, get) => ({
     }
   },
 
-  async validateKey(provider) {
-    if (!getProvider(provider)) {
+  async validateKey(id) {
+    // Resolve provider + meta from the local cache; fall back to undefined
+    // if the cache is stale (e.g. the row was just added).
+    const meta = get().keys.find((k) => k.id === id);
+    const provider = meta?.provider ?? id;
+    if (meta && !getProvider(meta.provider)) {
       const state = makeValidationState({ status: 'invalid', reason: 'Unknown provider' });
-      set((s) => ({ validation: { ...s.validation, [provider]: state } }));
+      set((s) => ({ validation: { ...s.validation, [meta.provider]: state } }));
       return state;
     }
     set({ isValidating: true, error: null });
     try {
       // Fetch metadata so we know whether the user has stored a key.
-      const meta = await api.getKey(provider);
-      if (!meta.hasKey) {
+      const fresh = await api.getKey(id);
+      if (!fresh.hasKey) {
         const state = makeValidationState({ status: 'invalid', reason: 'No key stored for this provider' });
         set((s) => ({
-          validation: { ...s.validation, [provider]: state },
+          validation: { ...s.validation, [fresh.provider || provider]: state },
           isValidating: false,
         }));
         return state;
@@ -182,11 +196,11 @@ export const useKeyVaultStore = create<KeyVaultState>((set, get) => ({
       // check via `getKey` (above) so the user sees "valid" if the blob is
       // well-formed and marked isValid=true server-side.
       const state = makeValidationState({
-        status: meta.isValid ? 'valid' : 'invalid',
-        reason: meta.isValid ? null : 'Server marked this key invalid',
+        status: fresh.isValid ? 'valid' : 'invalid',
+        reason: fresh.isValid ? null : 'Server marked this key invalid',
       });
       set((s) => ({
-        validation: { ...s.validation, [provider]: state },
+        validation: { ...s.validation, [fresh.provider || provider]: state },
         isValidating: false,
       }));
       return state;

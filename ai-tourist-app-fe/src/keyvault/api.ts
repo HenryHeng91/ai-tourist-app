@@ -2,10 +2,10 @@
  * HTTP client for the key vault backend endpoints.
  *
  * Backend contract (see `backend/src/keyvault/keyVault.routes.ts`):
- *   POST   /me/keys              store / replace encrypted blob
- *   GET    /me/keys              list metadata { keys: StoredKeyMeta[] }
- *   GET    /me/keys/:provider    one metadata record
- *   DELETE /me/keys/:provider    delete the blob
+ *   POST   /keys                store / replace encrypted blob
+ *   GET    /keys                list metadata { keys: StoredKeyMeta[] }
+ *   GET    /keys/:id            one metadata record (addressed by UUID id)
+ *   DELETE /keys/:id            delete the blob
  *
  * SECURITY: this module NEVER accepts or returns a plaintext key.
  * The `EncryptedBlob` is the only thing that crosses the network for
@@ -24,7 +24,7 @@ export interface PutKeyRequest {
   isValid?: boolean;
 }
 
-/** POST /me/keys — store or replace the encrypted blob for one provider. */
+/** POST /keys — store or replace the encrypted blob for one provider. */
 export async function putKey(input: PutKeyRequest & EncryptedBlob): Promise<StoredKeyMeta> {
   const body = {
     provider: input.provider,
@@ -33,23 +33,23 @@ export async function putKey(input: PutKeyRequest & EncryptedBlob): Promise<Stor
     authTag: input.authTag,
     ...(typeof input.isValid === 'boolean' ? { isValid: input.isValid } : {}),
   };
-  const { data } = await httpClient.post<StoredKeyMeta>('/me/keys', body);
+  const { data } = await httpClient.post<StoredKeyMeta>('/keys', body);
   return data;
 }
 
-/** GET /me/keys — list all stored key metadata for the authenticated user. */
+/** GET /keys — list all stored key metadata for the authenticated user. */
 export async function listKeys(): Promise<StoredKeyMeta[]> {
-  const { data } = await httpClient.get<{ keys: StoredKeyMeta[] }>('/me/keys');
+  const { data } = await httpClient.get<{ keys: StoredKeyMeta[] }>('/keys');
   return data.keys;
 }
 
-/** GET /me/keys/:provider — metadata for a single provider. */
-export async function getKey(provider: string): Promise<StoredKeyMeta> {
-  const { data } = await httpClient.get<StoredKeyMeta>(`/me/keys/${encodeURIComponent(provider)}`);
+/** GET /keys/:id — metadata for a single row, addressed by UUID id. */
+export async function getKey(id: string): Promise<StoredKeyMeta> {
+  const { data } = await httpClient.get<StoredKeyMeta>(`/keys/${encodeURIComponent(id)}`);
   return data;
 }
 
-/** DELETE /me/keys/:provider — drop the stored blob for a provider. */
-export async function deleteKey(provider: string): Promise<void> {
-  await httpClient.delete(`/me/keys/${encodeURIComponent(provider)}`);
+/** DELETE /keys/:id — drop the stored blob for a row, addressed by UUID id. */
+export async function deleteKey(id: string): Promise<void> {
+  await httpClient.delete(`/keys/${encodeURIComponent(id)}`);
 }

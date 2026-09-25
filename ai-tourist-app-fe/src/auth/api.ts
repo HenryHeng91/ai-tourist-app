@@ -41,15 +41,55 @@ function toSession(res: { data: AuthResponse }): AuthSession {
 }
 
 /**
+ * Map a backend `error.code` to a user-friendly localized message.
+ *
+ * WHY: the backend returns raw exception messages (e.g. "An account with
+ * that email already exists") which are leaky, technical, and may expose
+ * internal phrasing. The AuthPage displays whatever we throw verbatim, so we
+ * rewrite each known code to a stable, friendly, English-only message the UI
+ * can render. Adding a new backend error code requires adding an entry here.
+ *
+ * Codes we know about (keep in sync with `backend/src/shared/errors.ts` +
+ * `backend/src/auth/auth.service.ts`):
+ *   - EMAIL_TAKEN            → 409 on signup (ConflictError in auth.service)
+ *   - INVALID_CREDENTIALS    → 401 on login  (UnauthorizedError)
+ *   - UNAUTHORIZED           → generic 401
+ *   - REFRESH_REPLAY         → 401 on refresh, session revoked
+ *   - BAD_REQUEST            → 400 (Zod validation, malformed body)
+ *   - RATE_LIMITED           → 429
+ *   - INTERNAL               → 500
+ *   - NETWORK                → no response (axios code, status 0)
+ */
+const FRIENDLY_ERROR_MESSAGES: Readonly<Record<string, string>> = {
+  EMAIL_TAKEN: 'An account with that email already exists. Try signing in instead.',
+  INVALID_CREDENTIALS: 'Incorrect email or password.',
+  UNAUTHORIZED: 'You need to sign in to continue.',
+  REFRESH_REPLAY: 'Your session ended for security reasons. Please sign in again.',
+  BAD_REQUEST: 'Some of the information you entered is invalid. Please review and try again.',
+  RATE_LIMITED: 'Too many attempts. Please wait a moment and try again.',
+  INTERNAL: 'Something went wrong on our end. Please try again in a moment.',
+  NETWORK: 'Cannot reach the server. Check your connection and try again.',
+};
+
+function friendlyMessage(code: string | undefined, fallback: string): string {
+  if (!code) return fallback;
+  return FRIENDLY_ERROR_MESSAGES[code] ?? fallback;
+}
+
+/**
  * Parse a backend error envelope `{ error: { code, message } }` into an Error
- * with a stable `.code` field. Falls back to the axios message for network
- * errors (status 0).
+ * with a stable `.code` field. The thrown `Error.message` is the LOCALIZED,
+ * user-friendly text mapped from `error.code` so the AuthPage (and any other
+ * UI surface that shows `err.message`) never leaks raw backend phrasing.
+ *
+ * Falls back to the axios message for network errors (status 0).
  */
 function apiError(err: unknown): Error & { code?: string; status?: number } {
   if (axios.isAxiosError(err)) {
     const data = err.response?.data as { error?: { code?: string; message?: string } } | undefined;
     const code = data?.error?.code ?? err.code ?? 'NETWORK';
-    const message = data?.error?.message ?? err.message ?? 'Request failed';
+    const backendMessage = data?.error?.message ?? err.message ?? 'Request failed';
+    const message = friendlyMessage(code, backendMessage);
     const e = new Error(message) as Error & { code?: string; status?: number };
     e.code = code;
     e.status = err.response?.status;
